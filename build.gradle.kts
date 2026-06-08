@@ -27,9 +27,9 @@ val lwjglPlatform = when {
 }
 
 // 2. Versionen der Bibliotheken definieren
-val lwjglVersion = "3.3.4"
+val lwjglVersion = "3.3.6"
 val jomlVersion = "1.10.8"
-val imguiVersion = "1.86.11"
+val imguiVersion = "1.87.3"
 
 dependencies {
     // --- JOML (Mathematik für 3D) ---

@@ -1,22 +1,26 @@
 package com;
 
+import com.engine.development.EditorPanel;
+import com.engine.development.shaderNodeEditor.NodeEditorPanel;
+import com.engine.development.ShaderEditorPanel;
+import com.engine.development.ViewportPanel;
 import com.engine.rendering.Shader;
-import imgui.ImGui;
-import imgui.ImVec2;
 import imgui.app.Application;
 import imgui.app.Configuration;
-import imgui.flag.ImGuiInputTextFlags;
 import imgui.type.ImString;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
 
 import java.nio.FloatBuffer;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.lwjgl.opengl.GL11.glGenTextures;
 import static org.lwjgl.opengl.GL30.*;
 
 public class Main extends Application {
+    public static final boolean IS_EDITOR = true;
+
     private int fboId, textureId, rboId;
     private int viewportWidth = 800;
     private int viewportHeight = 600;
@@ -36,13 +40,14 @@ public class Main extends Application {
         }
     """;
 
-    // --- DIE RETTUNG: Ein pures Byte-Array statt ImString ---
-    // Wir reservieren 4000 Bytes Speicherplatz für unseren Text.
-    private final byte[] shaderTextBuffer = new byte[4000];
+    private final ImString fragmentShaderInput = new ImString(4000);
+
+    // Liste aller GUI-Fenster
+    private final List<EditorPanel> panels = new ArrayList<>();
 
     @Override
     protected void configure(Configuration config) {
-        config.setTitle("Java Game Engine Editor - Fixed Input Engine");
+        config.setTitle("Java Game Engine - Clean Architecture");
         config.setWidth(1400);
         config.setHeight(800);
     }
@@ -51,12 +56,15 @@ public class Main extends Application {
     protected void init(Configuration config) {
         super.init(config);
         GL.createCapabilities();
-        setupFramebuffer();
 
-        // Start-Code in das Byte-Array hineinschreiben
-        String initialShaderCode = """
+        if (IS_EDITOR) {
+            setupFramebuffer();
+
+            // Shader-Text initialisieren
+            String initialShaderCode = """
             #version 330 core
             in vec3 vertexColor;
+            
             out vec4 FragColor;
             
             uniform float uColorPulse;
@@ -64,14 +72,21 @@ public class Main extends Application {
             void main() {
                 FragColor = vec4(vertexColor.r * uColorPulse, vertexColor.g, vertexColor.b, 1.0);
             }
-        """;
-        byte[] initialBytes = initialShaderCode.getBytes(StandardCharsets.UTF_8);
-        System.arraycopy(initialBytes, 0, shaderTextBuffer, 0, Math.min(initialBytes.length, shaderTextBuffer.length));
+            """;
+            fragmentShaderInput.set(initialShaderCode);
 
-        // Shader initial kompilieren
-        customShader = new Shader(vertexShaderSource, getShaderStringFromBuffer());
+            // GUI-Panels registrieren und sich selbst (this) übergeben
+            panels.add(new ViewportPanel(this));
+            panels.add(new ShaderEditorPanel(this, fragmentShaderInput));
+            panels.add(new NodeEditorPanel(this));
+        }
 
-        // Dreiecks-Setup
+        // Shader und Mesh-Daten laden (Core Engine)
+        customShader = new Shader(vertexShaderSource, IS_EDITOR ? fragmentShaderInput.get() : "/* Ihr Release Shader */");
+        setupMesh();
+    }
+
+    private void setupMesh() {
         float[] vertices = {
                 0.0f,  0.5f, 0.0f,    1.0f, 0.0f, 0.0f,
                 -0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f,
@@ -91,9 +106,11 @@ public class Main extends Application {
         glEnableVertexAttribArray(1);
     }
 
-    private void renderSceneToFramebuffer() {
-        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-        glViewport(0, 0, viewportWidth, viewportHeight);
+    public void compileShader(String fragmentCode) {
+        customShader.compileAndLink(vertexShaderSource, fragmentCode);
+    }
+
+    private void renderGameScene() {
         glClearColor(0.08f, 0.09f, 0.12f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -106,62 +123,36 @@ public class Main extends Application {
 
         glBindVertexArray(0);
         customShader.unbind();
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     @Override
     public void process() {
-        renderSceneToFramebuffer();
+        if (IS_EDITOR) {
+            // Im Editor-Modus: In den unsichtbaren Buffer zeichnen
+            glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+            glViewport(0, 0, viewportWidth, viewportHeight);
 
-        // 1. Viewport-Fenster
-        ImGui.begin("Spiel-Ansicht (Viewport)");
-        ImVec2 windowSize = ImGui.getContentRegionAvail();
-        handleViewportResize((int) windowSize.x, (int) windowSize.y);
-        ImGui.image(textureId, viewportWidth, viewportHeight, 0, 1, 1, 0);
-        ImGui.end();
+            renderGameScene();
 
-        // 2. Live-Code-Editor Fenster
-        ImGui.begin("Live GLSL Fragment Shader Editor");
-        ImGui.text("Nutzen Sie Ihre Tastatur nun völlig frei für jegliche Zeichen!");
-        ImGui.separator();
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        ImVec2 inputSize = new ImVec2(-1, 350);
-
-        // Wir nutzen die überladene Methode von ImGui, die ein rohes byte[] schluckt.
-        // Das löst die Tastatur-Blockade augenblicklich!
-        ImGui.inputTextMultiline("##ShaderCode", shaderTextBuffer, (int) inputSize.x, (int) inputSize.y);
-
-        ImGui.separator();
-
-        // Button zum Kompilieren
-        if (ImGui.button("Shader kompilieren", -1, 40)) {
-            customShader.compileAndLink(vertexShaderSource, getShaderStringFromBuffer());
-        }
-
-        ImGui.separator();
-
-        if (customShader.hasErrors()) {
-            ImGui.textColored(1.0f, 0.3f, 0.3f, 1.0f, "Kompilierungsfehler detektiert:");
-            ImGui.textWrapped(customShader.getErrorMessage());
+            // Alle registrierten UI-Fenster zeichnen
+            for (EditorPanel panel : panels) {
+                panel.updateAndRender();
+            }
         } else {
-            ImGui.textColored(0.3f, 1.0f, 0.3f, 1.0f, "Shader Status: Bereit und aktiv auf der GPU.");
+            // Im Spiel-Modus: Direkt auf den ganzen Bildschirm zeichnen
+            // Hier greifen wir auf die Fenstergröße der App zu
+            glViewport(0, 0, 1400, 800);
+            renderGameScene();
         }
-
-        ImGui.end();
     }
 
-    /**
-     * Hilfsfunktion, um das rohe C++-Byte-Array in einen sauberen Java-String zu konvertieren.
-     * Schneidet automatisch nach dem Nullterminator (\0) ab.
-     */
-    private String getShaderStringFromBuffer() {
-        String rawString = new String(shaderTextBuffer, StandardCharsets.UTF_8);
-        int nullTerminatorIdx = rawString.indexOf('\0');
-        if (nullTerminatorIdx != -1) {
-            return rawString.substring(0, nullTerminatorIdx);
-        }
-        return rawString;
-    }
+    // --- GETTER & UTILITIES FÜR DIE PANELS ---
+    public int getTextureId() { return textureId; }
+    public int getViewportWidth() { return viewportWidth; }
+    public int getViewportHeight() { return viewportHeight; }
+    public Shader getCustomShader() { return customShader; }
 
     private void setupFramebuffer() {
         fboId = glGenFramebuffers();
@@ -174,13 +165,12 @@ public class Main extends Application {
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureId, 0);
         rboId = glGenRenderbuffers();
         glBindRenderbuffer(GL_RENDERBUFFER, rboId);
-        glViewport(0,0, viewportWidth, viewportHeight);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, viewportWidth, viewportHeight);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboId);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-    private void handleViewportResize(int currentW, int currentH) {
+    public void handleViewportResize(int currentW, int currentH) {
         if (currentW > 0 && currentH > 0 && (currentW != viewportWidth || currentH != viewportHeight)) {
             viewportWidth = currentW;
             viewportHeight = currentH;
