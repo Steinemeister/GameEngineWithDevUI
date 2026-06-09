@@ -5,12 +5,12 @@ plugins {
     application
 }
 
-group = "com.myengine"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
+
+group = "com.myengine"
+version = "1.0-SNAPSHOT"
 
 // 1. Betriebssystem für die nativen Bibliotheken ermitteln
 val osName = OperatingSystem.current()
@@ -52,12 +52,6 @@ dependencies {
 
 configure<JavaApplication> {
     mainClass.set("com.Main")
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(24))
-    }
 }
 
 tasks.withType<JavaCompile> {

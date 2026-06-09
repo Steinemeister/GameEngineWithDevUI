@@ -66,15 +66,28 @@ public class NodeEditorPanel implements EditorPanel {
 
     @Override
     public void updateAndRender() {
+        // --- 1. HAUPTFENSTER FÜR DEN EDITOR ---
         ImGui.begin("Shader Node Editor");
-        ImGui.text("Rechtsklick = Menü öffnen/schließen | Rechtsklick auf Linie = Löschen");
+        ImGui.text("Rechtsklick = Menue oeffnen | Rechtsklick auf Linie = Loeschen");
         ImGui.separator();
 
+        // REINES EVENT-CHECKING VIA IMGUI (ABSTURZSICHER!)
+        // Wir prüfen hier, ob der Nutzer in das aktuelle Fenster rechtsklickt,
+        // BEVOR wir überhaupt mit ImNodes anfangen.
+        boolean triggerSpawnMenu = false;
+        if (ImGui.isWindowHovered(imgui.flag.ImGuiHoveredFlags.ChildWindows) && ImGui.isMouseClicked(1) && ImNodes.getHoveredLink() == -1 && ImNodes.getHoveredNode() == -1) {
+            triggerSpawnMenu = true;
+            spawnMenuPos.x = ImGui.getMousePosX();
+            spawnMenuPos.y = ImGui.getMousePosY();
+        }
+
+        // Jetzt starten wir ImNodes ganz normal
         ImNodes.beginNodeEditor();
 
-        // --- 1. KNOTEN ZEICHNEN ---
+        // --- NODES SCHLEIFE ---
         for (EngineNode node : activeNodes) {
             ImNodes.beginNode(node.id);
+
             ImNodes.beginNodeTitleBar();
             ImGui.text(node.title);
             ImNodes.endNodeTitleBar();
@@ -87,74 +100,43 @@ public class NodeEditorPanel implements EditorPanel {
                 }
             }
 
-            for (int inputPin : node.inputPins) {
-                ImNodes.beginInputAttribute(inputPin);
-                if (node instanceof MultiplyNode) {
-                    ImGui.text(inputPin == ((MultiplyNode) node).inputPinA ? "In A" : "In B");
-                } else {
-                    ImGui.text("In");
+            // INPUTS ZEICHNEN
+            if (!node.inputPins.isEmpty()) {
+                for (int i = 0; i < node.inputPins.size(); i++) {
+                    int inputPin = node.inputPins.get(i);
+                    ImNodes.beginInputAttribute(inputPin);
+                    if (node instanceof MultiplyNode) {
+                        ImGui.text(i == 0 ? "In A" : "In B");
+                    } else {
+                        ImGui.text("In");
+                    }
+                    ImNodes.endInputAttribute();
                 }
-                ImNodes.endInputAttribute();
             }
 
-            for (int outputPin : node.outputPins) {
-                ImNodes.beginOutputAttribute(outputPin);
-                ImGui.text("Out =>");
-                ImNodes.endOutputAttribute();
+            // OUTPUTS ZEICHNEN
+            if (!node.outputPins.isEmpty()) {
+                for (int i = 0; i < node.outputPins.size(); i++) {
+                    int outputPin = node.outputPins.get(i);
+                    ImNodes.beginOutputAttribute(outputPin);
+                    ImGui.text("Out =>");
+                    ImNodes.endOutputAttribute();
+                }
             }
 
             ImNodes.endNode();
         }
 
-        // --- 2. VERBINDUNGEN ZEICHNEN ---
+        // --- VERBINDUNGEN ZEICHNEN ---
         for (int[] link : links) {
             ImNodes.link(link[0], link[1], link[2]);
         }
 
-        // --- 3. RECHTSKLICK-ABFANGEN IM RASTER ---
-        // Wenn im Node-Editor rechtsgeklickt wird, aber KEIN Knoten und KEINE Linie getroffen wurde:
-        if (ImNodes.isEditorHovered() && ImGui.isMouseClicked(1) && ImNodes.getHoveredLink() == -1 && ImNodes.getHoveredNode() == -1) {
-            showSpawnWindow = !showSpawnWindow; // Fenster umschalten (An/Aus)
+        // ImNodes sauber schließen. Da wir hier drin kein isEditorHovered() aufrufen,
+        // bleibt der C++ Scope perfekt auf ImNodesScope_None.
+        ImNodes.endNodeEditor();
 
-            // WICHTIG: Das fängt die echten Koordinaten im Node-Raster ab!
-            spawnMenuPos.x = ImGui.getMousePosX();
-            spawnMenuPos.y = ImGui.getMousePosY();
-        }
-
-        ImNodes.endNodeEditor(); // Node-Kontext wird sauber geschlossen!
-
-        // --- 4. ABSTURZSICHERES EXTRA-FENSTER FÜR DAS MENÜ ---
-        if (showSpawnWindow) {
-            // Wir setzen das Fenster genau an die Position des Mausklicks
-            ImGui.setNextWindowPos(spawnMenuPos.x, spawnMenuPos.y, imgui.flag.ImGuiCond.Appearing);
-
-            // Ein kleines rahmenloses Pop-up-Fenster erstellen
-            int windowFlags = imgui.flag.ImGuiWindowFlags.NoResize | imgui.flag.ImGuiWindowFlags.NoCollapse;
-            if (ImGui.begin("Knoten erstellen##SpawnMenu", windowFlags)) {
-
-                if (ImGui.button("RGB Color Node", -1, 25)) {
-                    spawnColorNode(spawnMenuPos.x, spawnMenuPos.y);
-                    showSpawnWindow = false; // Nach Klick schließen
-                }
-                if (ImGui.button("Float Constant", -1, 25)) {
-                    spawnFloatNode(spawnMenuPos.x, spawnMenuPos.y);
-                    showSpawnWindow = false;
-                }
-                if (ImGui.button("Multiply (Mathe)", -1, 25)) {
-                    spawnMultiplyNode(spawnMenuPos.x, spawnMenuPos.y);
-                    showSpawnWindow = false;
-                }
-
-                ImGui.separator();
-                if (ImGui.button("Schließen", -1, 20)) {
-                    showSpawnWindow = false;
-                }
-
-                ImGui.end();
-            }
-        }
-
-        // --- 5. VERBINDUNGEN LOGISCH PRÜFEN ---
+        // --- LOGISCHE PRÜFUNGEN ---
         if (ImNodes.isLinkCreated(startPin, endPin)) {
             boolean exists = false;
             for (int[] l : links) {
@@ -167,7 +149,6 @@ public class NodeEditorPanel implements EditorPanel {
             }
         }
 
-        // --- 6. LINIEN PER RECHTSKLICK LÖSCHEN ---
         int hoveredLinkId = ImNodes.getHoveredLink();
         if (hoveredLinkId != -1 && ImGui.isMouseClicked(1)) {
             int[] toRemove = null;
@@ -184,7 +165,43 @@ public class NodeEditorPanel implements EditorPanel {
             }
         }
 
+        // Hauptfenster beenden
         ImGui.end();
+
+        // --- 2. FLOATING SPAWN MENÜ (KOMPLETT UNABHÄNGIG) ---
+        if (triggerSpawnMenu) {
+            showSpawnWindow = !showSpawnWindow;
+        }
+
+        if (showSpawnWindow) {
+            ImGui.setNextWindowPos(spawnMenuPos.x, spawnMenuPos.y, imgui.flag.ImGuiCond.Appearing);
+            int windowFlags = imgui.flag.ImGuiWindowFlags.NoResize | imgui.flag.ImGuiWindowFlags.NoCollapse | imgui.flag.ImGuiWindowFlags.AlwaysAutoResize;
+
+            if (ImGui.begin("Knoten erstellen", windowFlags)) {
+                ImGui.textDisabled("Auswaehlen:");
+                ImGui.separator();
+
+                if (ImGui.button("RGB Color Node", 150, 25)) {
+                    spawnColorNode(spawnMenuPos.x, spawnMenuPos.y);
+                    showSpawnWindow = false;
+                }
+                if (ImGui.button("Float Constant", 150, 25)) {
+                    spawnFloatNode(spawnMenuPos.x, spawnMenuPos.y);
+                    showSpawnWindow = false;
+                }
+                if (ImGui.button("Multiply (Mathe)", 150, 25)) {
+                    spawnMultiplyNode(spawnMenuPos.x, spawnMenuPos.y);
+                    showSpawnWindow = false;
+                }
+
+                ImGui.separator();
+                if (ImGui.button("Schliessen", 150, 20)) {
+                    showSpawnWindow = false;
+                }
+
+                ImGui.end();
+            }
+        }
     }
 
     private void triggerShaderUpdate() {
