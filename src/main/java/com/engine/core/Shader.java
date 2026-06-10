@@ -1,4 +1,4 @@
-package com.engine.rendering;
+package com.engine.core;
 
 import static org.lwjgl.opengl.GL20.*;
 

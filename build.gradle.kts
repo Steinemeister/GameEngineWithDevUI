@@ -48,6 +48,9 @@ dependencies {
 
     // --- Dear ImGui (Java Bindings) ---
     implementation("io.github.spair:imgui-java-app:${imguiVersion}")
+
+    // --- Google Gson für das Speichern und Laden von JSON-Projektdateien ---
+    implementation("com.google.code.gson:gson:2.11.0")
 }
 
 configure<JavaApplication> {
