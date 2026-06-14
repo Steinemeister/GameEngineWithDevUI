@@ -2,6 +2,7 @@ package com.engine.editor;
 
 import com.engine.core.Main;
 import com.engine.core.Shader;
+import com.engine.scene.GameObject;
 import imgui.ImGui;
 import imgui.ImVec2;
 import imgui.type.ImString;
@@ -51,12 +52,19 @@ public class ShaderEditorPanel implements EditorPanel {
 
         ImGui.separator();
 
-        Shader shader = engine.getCustomShader();
-        if (shader.hasErrors()) {
-            ImGui.textColored(1.0f, 0.3f, 0.3f, 1.0f, "Kompilierungsfehler detektiert:");
-            ImGui.textWrapped(shader.getErrorMessage());
+        GameObject selectedObj = engine.getSelectedObject();
+
+        if (selectedObj != null && selectedObj.material != null && selectedObj.material.getShaderProgram() != null) {
+            Shader shader = selectedObj.material.getShaderProgram();
+
+            if (shader.hasErrors()) {
+                ImGui.textColored(1.0f, 0.3f, 0.3f, 1.0f, "Kompilierungsfehler detektiert:");
+                ImGui.textWrapped(shader.getErrorMessage());
+            } else {
+                ImGui.textColored(0.3f, 1.0f, 0.3f, 1.0f, "Shader Status: Bereit und aktiv auf der GPU.");
+            }
         } else {
-            ImGui.textColored(0.3f, 1.0f, 0.3f, 1.0f, "Shader Status: Bereit und aktiv auf der GPU.");
+            ImGui.textDisabled("Waehlen Sie ein Objekt im Viewport aus, um dessen Shader-Status zu sehen.");
         }
 
         ImGui.end();

@@ -8,6 +8,7 @@ public class GameObject {
 
     public String name;
     public ObjectType type;
+    public Material material;
 
     // Position im 3D-Raum
     public float posX = 0.0f;

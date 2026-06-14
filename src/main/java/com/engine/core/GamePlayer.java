@@ -1,6 +1,7 @@
 package com.engine.core;
 
 import com.engine.scene.GameObject;
+import com.engine.scene.Material;
 import com.engine.scene.Scene;
 import com.google.gson.Gson;
 import org.lwjgl.glfw.GLFW;
@@ -50,12 +51,12 @@ public class GamePlayer {
         gameWindow.resize(1280, 720);
 
         File shaderFile = new File(projectPath + "/assets/shaders/default_material.glsl");
-        if (shaderFile.exists()) {
-            try {
-                String shaderCode = java.nio.file.Files.readString(shaderFile.toPath());
-                gameWindow.compileShader(shaderCode);
-            } catch (Exception e) {
-                System.err.println("Standard-Shader konnte nicht geladen werden.");
+        if (shaderFile.exists() && activeScene != null) {
+            // Wenn ein Shader existiert, weisen wir ihn allen geladenen Objekten im Spiel zu
+            for (GameObject obj : activeScene.gameObjects) {
+                if (obj.type == GameObject.ObjectType.CUBE) {
+                    obj.material = new Material(shaderFile.getAbsolutePath());
+                }
             }
         }
 
@@ -87,7 +88,7 @@ public class GamePlayer {
                     }
                 }
 
-                gameWindow.render(false, renderOnlyCubes);
+                gameWindow.render(false, 0, renderOnlyCubes);
             }
 
             GLFW.glfwSwapBuffers(window);

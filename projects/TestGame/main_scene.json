@@ -3,26 +3,54 @@
   "gameObjects": [
     {
       "name": "GameObject_1",
-      "posX": 0.0,
+      "material": {
+        "fragmentShaderPath": "projects/StandardShaders/terrain_triplanar.frag",
+        "shaderProgram": {
+          "programId": 3331
+        },
+        "isCompiled": true
+      },
+      "posX": -0.2782722,
       "posY": 0.0,
       "posZ": 0.0
     },
     {
       "name": "GameObject_2",
-      "posX": 0.0,
+      "material": {
+        "fragmentShaderPath": "projects/StandardShaders/terrain_triplanar.frag",
+        "shaderProgram": {
+          "programId": 3334
+        },
+        "isCompiled": true
+      },
+      "posX": 1.4608135,
       "posY": 1.0,
       "posZ": 0.0
     },
     {
       "name": "GameObject_3",
-      "posX": 1.5197871,
+      "material": {
+        "fragmentShaderPath": "projects/StandardShaders/terrain_triplanar.frag",
+        "shaderProgram": {
+          "programId": 3337
+        },
+        "isCompiled": true
+      },
+      "posX": -1.8829037,
       "posY": 0.6232714,
       "posZ": -0.17209579
     },
     {
       "name": "SpielKamera_4",
       "type": "CAMERA",
-      "posX": 0.0,
+      "material": {
+        "fragmentShaderPath": "projects/StandardShaders/terrain_triplanar.frag",
+        "shaderProgram": {
+          "programId": 3340
+        },
+        "isCompiled": true
+      },
+      "posX": -1.0372027,
       "posY": 1.4201034,
       "posZ": 2.5724082
     }
