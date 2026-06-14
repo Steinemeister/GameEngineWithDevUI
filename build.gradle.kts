@@ -1,79 +1,40 @@
-import org.gradle.internal.os.OperatingSystem
-
 plugins {
     java
-    application
 }
 
-repositories {
-    mavenCentral()
-}
-
-group = "com.myengine"
-version = "1.0-SNAPSHOT"
-
-// 1. Betriebssystem für die nativen Bibliotheken ermitteln
-val osName = OperatingSystem.current()
-val lwjglPlatform = when {
-    osName.isWindows -> "natives-windows"
-    osName.isMacOsX -> {
-        // Unterscheidung zwischen Intel (x64) und Apple Silicon (arm64)
-        if (System.getProperty("os.arch").contains("aarch64")) "natives-macos-arm64" else "natives-macos"
-    }
-    osName.isLinux -> {
-        if (System.getProperty("os.arch").contains("aarch64")) "natives-linux-arm64" else "natives-linux"
-    }
-    else -> throw GradleException("Unsupported operating system")
-}
-
-// 2. Versionen der Bibliotheken definieren
-val lwjglVersion = "3.3.6"
+// Zentrale Versionsverwaltung
+val lwjglVersion = "3.3.4"
 val jomlVersion = "1.10.8"
-val imguiVersion = "1.87.3"
+val gsonVersion = "2.11.0"
+val imguiVersion = "1.89.0"
 
-dependencies {
-    // --- JOML (Mathematik für 3D) ---
-    implementation("org.joml:joml:$jomlVersion")
-
-    // --- LWJGL Core & Standard-Bindings ---
-    implementation(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))
-    implementation("org.lwjgl:lwjgl")
-    implementation("org.lwjgl:lwjgl-glfw")
-    implementation("org.lwjgl:lwjgl-opengl")
-
-    // --- LWJGL Native Binaries (automatisch zugewiesen) ---
-    runtimeOnly("org.lwjgl:lwjgl::$lwjglPlatform")
-    runtimeOnly("org.lwjgl:lwjgl-glfw::$lwjglPlatform")
-    runtimeOnly("org.lwjgl:lwjgl-opengl::$lwjglPlatform")
-
-    // --- Dear ImGui (Java Bindings) ---
-    implementation("io.github.spair:imgui-java-app:${imguiVersion}")
-
-    // --- Google Gson für das Speichern und Laden von JSON-Projektdateien ---
-    implementation("com.google.code.gson:gson:2.11.0")
+// Automatische Betriebssystem-Erkennung für LWJGL-Natives
+val osName = System.getProperty("os.name").lowercase()
+val lwjglTarget = when {
+    osName.contains("win") -> "windows"
+    osName.contains("mac") -> "macos"
+    else -> "linux"
 }
 
-configure<JavaApplication> {
-    mainClass.set("com.engine.core.Main")
-}
-
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-}
-application {
-    // 1. Prüfen, ob wir beim Starten explizit eine andere Hauptklasse mitgegeben haben
-    if (project.hasProperty("mainClass")) {
-        mainClass.set(project.property("mainClass").toString())
-    } else {
-        // 2. Falls nicht, startet standardmäßig immer deine Entwicklungsoberfläche (IDE)
-        mainClass.set("com.engine.core.Main")
+allprojects {
+    repositories {
+        mavenCentral()
     }
 }
 
-// FÜGEN SIE DIESEN BLOCK GANZ UNTEN HINZU:
-// Erlaubt uns, das Spiel über die Konsole oder die IDE mit Argumenten zu füttern
-tasks.run {
-    if (project.hasProperty("args")) {
-        args(project.property("args").toString().split(" "))
+subprojects {
+    apply(plugin = "java")
+
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(21))
+        }
     }
+
+    // Variablen an die Subprojekte weitergeben
+    extra["lwjglVersion"] = lwjglVersion
+    extra["lwjglTarget"] = lwjglTarget
+    extra["jomlVersion"] = jomlVersion
+    extra["gsonVersion"] = gsonVersion
+    extra["imguiVersion"] = imguiVersion
 }

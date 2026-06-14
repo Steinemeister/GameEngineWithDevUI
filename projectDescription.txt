@@ -1,0 +1,38 @@
+Ich entwickle eine modulare Game-Engine in Java 21 mit Gradle (Kotlin DSL).
+Bitte berücksichtige bei allen zukünftigen Code-Generierungen und Erklärungen die folgende Architektur:
+
+1. TECH-STACK
+- Grafik/Input: LWJGL 3 (OpenGL, GLFW)
+- Mathematik: JOML
+- UI: imgui-java (Dear ImGui)
+- Serialisierung: Google Gson
+
+2. MULTI-THREADED ARCHITEKTUR
+- Main-Thread: App-Steuerung, GLFW-Input, ECS-Spiellogik (update()), ImGui-UI.
+- Render-Thread: Besitzt exklusiv den OpenGL-Kontext; verarbeitet Grafikbefehle und FBO-Rendering.
+- Audio-Thread: Verwaltet asynchron OpenAL-Soundquellen.
+
+3. INTELLIJ / GRADLE PROJEKTSTRUKTUR
+mein-game-engine-root/
+├── build.gradle.kts (Globale Versionen, Repositories, JRE-21-Toolchain)
+├── settings.gradle.kts (include("engine-core", "game-runtime", "editor"))
+├── engine-core/ (Library-Modul: com.engine.core.core/threads/ecs/renderer/io)
+├── game-runtime/ (Spiel-Modul: com.game.components / GameMain.java)
+└── editor/ (Dev-Interface-Modul: com.engine.editor.project/ui/pipeline / EditorMain.java)
+
+4. KERN-FEATURES
+- Editor-Kopplung: Engine rendert in ein Framebuffer-Object (FBO). Der Editor zeigt diese Textur via ImGui.image() an.
+- Projektverwaltung: Eine dateibasierte "project.json" verwaltet Pfade relativ und speichert eine UUID-Asset-Registry (UUID -> relativer Pfad), um Datenverlust beim Verschieben von Dateien zu verhindern.
+- Gson-ECS: Ein Custom JsonSerializer/Deserializer speichert polymorphen Komponenten, indem er den voll qualifizierten Klassennamen (Type-Property) in die JSON-Szenendatei schreibt.
+- Export-Pipeline: Ein Gradle-Task (:game-runtime:copyExportLibs) isoliert alle Runtime-JARs (ohne ImGui/Editor). Der ExportWizard nutzt das JDK-Tool "jpackage", um das Spiel samt minimiertem JRE und Assets in eine native, ausführbare Standalone-Datei (.exe/.app) zu packen.
+
+5. IMPLEMENTIERUNGS-REIHENFOLGE (STRIKT EINHALTEN)
+M1 (Fundament): ThreadManager -> Window -> RenderThread -> AudioThread -> Input
+M2 (Projekt-E/A): ProjectData -> ProjectManager -> UUID-Asset-Registry
+M3 (Grafik): Shader -> Texture -> RenderBatch
+M4 (ECS): Component -> Entity -> Scene -> SpriteRenderer/PlayerController
+M5 (Serialisierung): SceneSerializer -> SceneManager
+M6 (UI): Framebuffer -> EditorMain -> GameViewPanel -> Hierarchy/Inspector
+M7 (Export): Gradle-Copy-Task -> ExportWizard -> GameMain (Standalone Entry)
+
+Hilf mir bei der Erstellung des Projekts basierend auf dieser Struktur.

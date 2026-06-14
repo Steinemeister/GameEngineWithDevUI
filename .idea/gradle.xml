@@ -5,9 +5,13 @@
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleJvm" value="temurin-21" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/editor" />
+            <option value="$PROJECT_DIR$/engine-core" />
+            <option value="$PROJECT_DIR$/game-runtime" />
           </set>
         </option>
       </GradleProjectSettings>
