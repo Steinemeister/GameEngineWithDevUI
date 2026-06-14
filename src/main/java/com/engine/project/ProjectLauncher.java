@@ -82,7 +82,7 @@ public class ProjectLauncher {
             ImGui.textDisabled("Keine Projekte gefunden. Erstellen Sie eins von oben.");
         } else {
             for (String projectName : foundProjects) {
-                if (ImGui.selectable("📁 " + projectName)) {
+                if (ImGui.selectable("[=] " + projectName)) {
                     loadProject(projectName);
                 }
             }

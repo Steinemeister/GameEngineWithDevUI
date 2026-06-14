@@ -1,0 +1,23 @@
+{
+  "sceneName": "main_scene.json",
+  "gameObjects": [
+    {
+      "name": "GameObject_1",
+      "posX": 0.0,
+      "posY": 0.0,
+      "posZ": 0.0
+    },
+    {
+      "name": "GameObject_2",
+      "posX": 0.0,
+      "posY": 1.0,
+      "posZ": 0.0
+    },
+    {
+      "name": "GameObject_3",
+      "posX": 1.5197871,
+      "posY": 0.6232714,
+      "posZ": -0.17209579
+    }
+  ]
+}
