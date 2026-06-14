@@ -4,6 +4,7 @@ import com.engine.core.rendering.RenderPipeline;
 import com.engine.core.rendering.ScreenQuad;
 import com.engine.scene.GameObject;
 import com.engine.scene.Material;
+import com.engine.scene.RotationComponent;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -162,6 +163,16 @@ public class GameWindow {
             sendMatrixToShader(obj.material.getShaderProgram().getProgramId(), "uView", viewMatrix);
 
             modelMatrix.identity().translate(obj.posX, obj.posY, obj.posZ);
+            RotationComponent rot = obj.getComponent(RotationComponent.class);
+            if (rot != null) {
+                // Wenn das Objekt im Spielmodus ist, aktualisieren wir seine Logik
+                if (!toFramebuffer) {
+                    rot.update(obj); // Dreht den Winkel framebasiert weiter
+                }
+                // OpenGL anweisen, die Model-Matrix um die Y-Achse (0,1,0) zu rotieren
+                modelMatrix.rotate((float) Math.toRadians(rot.currentAngle), 0.0f, 1.0f, 0.0f);
+            }
+
             sendMatrixToShader(obj.material.getShaderProgram().getProgramId(), "uModel", modelMatrix);
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -180,7 +191,7 @@ public class GameWindow {
         glUniform1i(glGetUniformLocation(lightingShader.getProgramId(), "gAlbedo"), 2);
 
         // Das berechnete Deferred-Bild in das Ziel-FBO (Ihren Viewport) werfen
-        pipeline.renderLightingAndPostProcess(toFramebuffer ? targetTextureFboId : 0, screenQuad.getVaoId());
+        pipeline.renderLightingAndPostProcess(targetTextureFboId, screenQuad.getVaoId());
 
         lightingShader.unbind();
     }

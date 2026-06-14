@@ -61,12 +61,16 @@ public class ViewportPanel implements EditorPanel {
         // --- 3D GIZMO STEUERUNG (IMGUIZMO) ---
         GameObject selectedObj = engine.getSelectedObject();
         if (selectedObj != null) {
-            // ImGuizmo für diesen Frame initialisieren
             ImGuizmo.setOrthographic(false);
             ImGuizmo.setDrawList();
 
-            // Das Gizmo exakt auf die Position des Viewport-Fensters kalibrieren
-            ImGuizmo.setRect(screenPos.x, screenPos.y, windowSize.x, windowSize.y);
+            // DER ENTSCHEIDENDE FIX:
+            // Wir lesen die exakten Rahmen-Kanten des inneren Viewports ab.
+            float windowWidth = windowSize.x;
+            float windowHeight = windowSize.y;
+
+            // Wir sagen ImGuizmo exakt, wo die 3D-Welt auf Ihrem Monitor beginnt und wie groß sie ist!
+            ImGuizmo.setRect(screenPos.x, screenPos.y, windowWidth, windowHeight);
 
             engine.getGameWindow().getViewMatrix().get(viewArray);
             engine.getGameWindow().getProjectionMatrix().get(projArray);
@@ -74,6 +78,7 @@ public class ViewportPanel implements EditorPanel {
             org.joml.Matrix4f modelMat = new org.joml.Matrix4f().translation(selectedObj.posX, selectedObj.posY, selectedObj.posZ);
             modelMat.get(modelArray);
 
+            // Zeichnet das Achsenkreuz passgenau auf das Objekt
             ImGuizmo.manipulate(viewArray, projArray, Operation.TRANSLATE, Mode.WORLD, modelArray, deltaMatrix, snap);
 
             if (ImGuizmo.isUsing()) {

@@ -1,0 +1,43 @@
+{
+  "sceneName": "main_scene.json",
+  "gameObjects": [
+    {
+      "name": "Wuerfel_1",
+      "type": "CUBE",
+      "posX": 1.7716229,
+      "posY": -0.25623,
+      "posZ": 0.94,
+      "material": {
+        "fragmentShaderPath": "projects/StandardShaders/terrain_triplanar.frag",
+        "shaderProgram": {
+          "programId": 1339
+        },
+        "isCompiled": true
+      },
+      "components": [
+        {
+          "type": "com.engine.scene.RotationComponent",
+          "properties": {
+            "rotationSpeed": 1.3,
+            "currentAngle": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "SpielKamera_2",
+      "type": "CAMERA",
+      "posX": 1.5087402,
+      "posY": 0.0,
+      "posZ": 3.0837984,
+      "material": {
+        "fragmentShaderPath": "projects/StandardShaders/terrain_triplanar.frag",
+        "shaderProgram": {
+          "programId": 1342
+        },
+        "isCompiled": true
+      },
+      "components": []
+    }
+  ]
+}

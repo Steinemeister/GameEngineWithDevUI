@@ -2,6 +2,7 @@ package com.engine.editor;
 
 import com.engine.core.Main;
 import com.engine.scene.GameObject;
+import com.engine.scene.RotationComponent;
 import imgui.ImGui;
 
 public class InspectorPanel implements EditorPanel {
@@ -39,7 +40,24 @@ public class InspectorPanel implements EditorPanel {
             }
 
             ImGui.separator();
-            ImGui.textDisabled("Weitere Komponenten (z.B. Mesh, Material) koennen hier angedockt werden.");
+
+            ImGui.text("Komponenten (Scripts):");
+
+            RotationComponent rotComp = selectedObj.getComponent(RotationComponent.class);
+
+            if (rotComp == null) {
+                // Button, falls das Objekt noch kein Dreh-Verhalten besitzt
+                if (ImGui.button("+ RotationScript anfuegen", -1, 25)) {
+                    selectedObj.components.add(new RotationComponent());
+                }
+            } else {
+                // Slider zum Einstellen der Geschwindigkeit im Editor
+                float[] speedBuffer = { rotComp.rotationSpeed };
+                ImGui.text("Rotations-Verhalten aktiv");
+                if (ImGui.dragFloat("Dreh-Geschwindigkeit", speedBuffer, 0.1f, 0.0f, 10.0f)) {
+                    rotComp.rotationSpeed = speedBuffer[0];
+                }
+            }
         }
 
         ImGui.end();

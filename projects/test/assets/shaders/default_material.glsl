@@ -3,5 +3,5 @@
     out vec4 FragColor;
     uniform float uColorPulse;
     void main() {
-        FragColor = vec4(vertexColor, 1.0);
+        FragColor = vec4(vertexColor * uColorPulse, 1.0);
     }

@@ -54,9 +54,26 @@ dependencies {
 }
 
 configure<JavaApplication> {
-    mainClass.set("com.Main")
+    mainClass.set("com.engine.core.Main")
 }
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
+}
+application {
+    // 1. Prüfen, ob wir beim Starten explizit eine andere Hauptklasse mitgegeben haben
+    if (project.hasProperty("mainClass")) {
+        mainClass.set(project.property("mainClass").toString())
+    } else {
+        // 2. Falls nicht, startet standardmäßig immer deine Entwicklungsoberfläche (IDE)
+        mainClass.set("com.engine.core.Main")
+    }
+}
+
+// FÜGEN SIE DIESEN BLOCK GANZ UNTEN HINZU:
+// Erlaubt uns, das Spiel über die Konsole oder die IDE mit Argumenten zu füttern
+tasks.run {
+    if (project.hasProperty("args")) {
+        args(project.property("args").toString().split(" "))
+    }
 }

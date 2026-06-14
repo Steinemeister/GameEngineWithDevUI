@@ -30,7 +30,7 @@ public class FileBrowserPanel implements EditorPanel {
         if (listOfFiles != null) {
             for (File file : listOfFiles) {
                 if (file.isFile() && file.getName().endsWith(".glsl")) {
-                    if (ImGui.selectable("📄 " + file.getName())) {
+                    if (ImGui.selectable("[=] " + file.getName())) {
                         loadShaderFile(file.getAbsolutePath());
                     }
                 }

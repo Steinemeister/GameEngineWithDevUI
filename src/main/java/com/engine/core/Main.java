@@ -3,6 +3,8 @@ package com.engine.core;
 import com.engine.editor.*;
 import com.engine.project.ProjectConfig;
 import com.engine.project.ProjectLauncher;
+import com.engine.scene.Component;
+import com.engine.scene.ComponentAdapter;
 import com.engine.scene.GameObject;
 import com.engine.scene.Scene;
 import com.google.gson.Gson;
@@ -51,7 +53,10 @@ public class Main extends Application {
 
     // Sicherheits-Flags für stabilen Frame-Wechsel
     private boolean projectNeedsClose = false;
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(Component.class, new ComponentAdapter())
+            .setPrettyPrinting()
+            .create();
 
     @Override
     protected void configure(Configuration config) {
@@ -128,34 +133,37 @@ public class Main extends Application {
 
         // 1. Szene vor dem Start zwingend auf der Festplatte sichern
         String scenePath = currentProjectPath + "/" + activeProjectConfig.lastOpenedScene;
-        try (FileWriter writer = new FileWriter(scenePath)) {
+        try (java.io.FileWriter writer = new java.io.FileWriter(scenePath)) {
             gson.toJson(activeScene, writer);
             System.out.println("Szene vor Spielstart zwischengespeichert.");
-        } catch (IOException e) {
+        } catch (java.io.IOException e) {
             System.err.println("Fehler beim Sichern vor Spielstart: " + e.getMessage());
             return;
         }
 
-        // 2. Den separaten Java-Prozess für den Player aufbauen
+        // 2. Den absolut isolierten Gradle-Prozess aufbauen
         try {
-            String javaHome = System.getProperty("java.home");
-            String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
-            String classpath = System.getProperty("java.class.path");
+            boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+            String gradleCmd = isWindows ? "gradlew.bat" : "./gradlew";
 
-            ProcessBuilder builder = new ProcessBuilder(
-                    javaBin,
-                    "-cp", classpath,
-                    "com.engine.core.GamePlayer", // Unser echter Paketpfad
-                    currentProjectPath
+            // HIER IST DER FIX:
+            // -PmainClass zwingt Gradle dazu, die GamePlayer-Klasse auszuführen.
+            // --args übergibt den Pfad zu deinem aktuellen Projektordner.
+            ProcessBuilder pb = new ProcessBuilder(
+                    gradleCmd,
+                    "run",
+                    "-PmainClass=com.engine.core.GamePlayer",
+                    "--args=" + currentProjectPath
             );
 
-            // Leitet alle System.out-Ausgaben des Players in diese IDE-Konsole um
-            builder.inheritIO();
-            builder.start();
-            System.out.println("Spiele-Runtime erfolgreich im Hintergrund abgefeuert!");
+            // Leitet alle Log- und Fehler-Ausgaben des Players in diese IDE-Konsole um
+            pb.inheritIO();
 
-        } catch (IOException e) {
-            System.err.println("Fehler beim Starten der Spiele-Runtime: " + e.getMessage());
+            pb.start();
+            System.out.println("Spiele-Runtime isoliert und zielgerichtet via Gradle gestartet!");
+
+        } catch (java.io.IOException e) {
+            System.err.println("Fehler beim Starten des Gradle-Prozesses: " + e.getMessage());
         }
     }
 
