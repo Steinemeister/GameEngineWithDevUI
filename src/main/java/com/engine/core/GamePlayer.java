@@ -1,5 +1,6 @@
 package com.engine.core;
 
+import com.engine.scene.GameObject;
 import com.engine.scene.Scene;
 import com.google.gson.Gson;
 import org.lwjgl.glfw.GLFW;
@@ -58,9 +59,35 @@ public class GamePlayer {
             }
         }
 
+        org.joml.Vector3f runtimeCameraPos = new org.joml.Vector3f(0.0f, 0.0f, 3.0f); // Default Fallback
+
+        if (activeScene != null) {
+            for (GameObject obj : activeScene.gameObjects) {
+                if (obj.type == GameObject.ObjectType.CAMERA) {
+                    // Wir haben die Kamera aus dem Editor gefunden!
+                    runtimeCameraPos.set(obj.posX, obj.posY, obj.posZ);
+                    System.out.println("Spiel-Kamera erfolgreich auf Position gesetzt: " + runtimeCameraPos);
+                    break; // Erste gefundene Kamera nutzen
+                }
+            }
+        }
+
         while (!GLFW.glfwWindowShouldClose(window)) {
+            gameWindow.getCamera().getPosition().set(runtimeCameraPos);
+            // Sicherstellen, dass die Kamera nach vorne auf die Mitte (0,0,0) blickt
+            gameWindow.getCamera().getTarget().set(0.0f, 0.0f, 0.0f);
+
             if (activeScene != null) {
-                gameWindow.render(false, activeScene.gameObjects);
+                // WICHTIG: Im echten Spiel rendern wir die Kamera-Kiste SELBST natürlich nicht!
+                // Wir filtern die Kamera temporär aus der Renderliste für den Spieler heraus:
+                java.util.List<GameObject> renderOnlyCubes = new java.util.ArrayList<>();
+                for (GameObject obj : activeScene.gameObjects) {
+                    if (obj.type != GameObject.ObjectType.CAMERA) {
+                        renderOnlyCubes.add(obj);
+                    }
+                }
+
+                gameWindow.render(false, renderOnlyCubes);
             }
 
             GLFW.glfwSwapBuffers(window);

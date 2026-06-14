@@ -15,20 +15,30 @@ public class HierarchyPanel implements EditorPanel {
     public void updateAndRender() {
         ImGui.begin("Szene-Hierarchie (Hierarchy)");
 
-        if (ImGui.button("[+] Neues Objekt", -1, 25)) {
-            // Ein neues Standard-Objekt in der aktiven Szene der Main-Klasse registrieren
-            int objCount = engine.getActiveScene().gameObjects.size() + 1;
-            engine.getActiveScene().gameObjects.add(new GameObject("GameObject_" + objCount));
+        if (ImGui.button("[+] Objekt erstellen...", -1, 25)) {
+            ImGui.openPopup("CreateObjectPopup");
+        }
+
+        if (ImGui.beginPopup("CreateObjectPopup")) {
+            if (ImGui.menuItem("3D Wuerfel (Cube)")) {
+                int count = engine.getActiveScene().gameObjects.size() + 1;
+                engine.getActiveScene().gameObjects.add(new GameObject("Wuerfel_" + count, GameObject.ObjectType.CUBE));
+            }
+            if (ImGui.menuItem("Kamera (Camera)")) {
+                int count = engine.getActiveScene().gameObjects.size() + 1;
+                GameObject cam = new GameObject("SpielKamera_" + count, GameObject.ObjectType.CAMERA);
+                cam.posZ = 3.0f;
+                engine.getActiveScene().gameObjects.add(cam);
+            }
+            ImGui.endPopup();
         }
 
         ImGui.separator();
 
-        // Alle Objekte auflisten
         for (GameObject obj : engine.getActiveScene().gameObjects) {
-            // Selectable stellt die Objekte als klickbare Zeilen dar
-            if (ImGui.selectable(" -> " + obj.name)) {
+            String prefix = obj.type == GameObject.ObjectType.CAMERA ? "[CAM] " : "[OBJ] ";
+            if (ImGui.selectable(prefix + obj.name)) {
                 engine.setSelectedObject(obj);
-                // Hier docken wir später das Inspector-Panel für die X/Y/Z-Verschiebung an
             }
         }
 

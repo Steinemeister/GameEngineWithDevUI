@@ -50,13 +50,14 @@ public class GameWindow {
         setupFramebuffer();
         setupCubeMesh();
 
-        // 3D-Shader kompilieren
         customShader = new Shader(vertexShader3D, """
             #version 330 core
             in vec3 vertexColor;
             out vec4 FragColor;
+            uniform vec3 uObjectColor;
             void main() {
-                FragColor = vec4(vertexColor, 1.0);
+                // Wenn uObjectColor gesetzt ist, nutzen wir diese, sonst die Vertex-Farbe
+                FragColor = vec4(vertexColor * uObjectColor, 1.0);
             }
         """);
     }
@@ -95,6 +96,15 @@ public class GameWindow {
             // Model-Matrix für jedes Objekt anhand seiner Position aufbauen
             modelMatrix.identity().translate(obj.posX, obj.posY, obj.posZ);
             sendMatrixToShader("uModel", modelMatrix);
+
+            int colorLoc = glGetUniformLocation(customShader.getProgramId(), "uObjectColor");
+            if (colorLoc != -1) {
+                if (obj.type == GameObject.ObjectType.CAMERA) {
+                    glUniform3f(colorLoc, 0.2f, 1.0f, 0.2f); // Neongrün für die Kamera im Editor
+                } else {
+                    glUniform3f(colorLoc, 1.0f, 1.0f, 1.0f); // Standard-Weiß/Grau für Würfel
+                }
+            }
 
             // Einen Würfel/Objekt zeichnen (36 Vertices für 6 Würfelseiten)
             glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -160,24 +170,17 @@ public class GameWindow {
     public Vector3f getCameraPos() { return camera.getPosition(); }
 
     private void setupCubeMesh() {
-        // Ein einfacher 3D-Würfel mit farbigen Seiten (Position X,Y,Z und Farbe R,G,B)
         float[] cubeVertices = {
-                // Rückseite
                 -0.2f, -0.2f, -0.2f,  0.3f, 0.3f, 0.3f,   0.2f, -0.2f, -0.2f,  0.3f, 0.3f, 0.3f,   0.2f,  0.2f, -0.2f,  0.3f, 0.3f, 0.3f,
                 0.2f,  0.2f, -0.2f,  0.3f, 0.3f, 0.3f,  -0.2f,  0.2f, -0.2f,  0.3f, 0.3f, 0.3f,  -0.2f, -0.2f, -0.2f,  0.3f, 0.3f, 0.3f,
-                // Vorderseite (Blau angehaucht)
                 -0.2f, -0.2f,  0.2f,  0.4f, 0.5f, 0.8f,   0.2f, -0.2f,  0.2f,  0.4f, 0.5f, 0.8f,   0.2f,  0.2f,  0.2f,  0.4f, 0.5f, 0.8f,
                 0.2f,  0.2f,  0.2f,  0.4f, 0.5f, 0.8f,  -0.2f,  0.2f,  0.2f,  0.4f, 0.5f, 0.8f,  -0.2f, -0.2f,  0.2f,  0.4f, 0.5f, 0.8f,
-                // Linke Seite
                 -0.2f,  0.2f,  0.2f,  0.5f, 0.5f, 0.5f,  -0.2f,  0.2f, -0.2f,  0.5f, 0.5f, 0.5f,  -0.2f, -0.2f, -0.2f,  0.5f, 0.5f, 0.5f,
                 -0.2f, -0.2f, -0.2f,  0.5f, 0.5f, 0.5f,  -0.2f, -0.2f,  0.2f,  0.5f, 0.5f, 0.5f,  -0.2f,  0.2f,  0.2f,  0.5f, 0.5f, 0.5f,
-                // Rechte Seite
                 0.2f,  0.2f,  0.2f,  0.6f, 0.6f, 0.6f,   0.2f,  0.2f, -0.2f,  0.6f, 0.6f, 0.6f,   0.2f, -0.2f, -0.2f,  0.6f, 0.6f, 0.6f,
                 0.2f, -0.2f, -0.2f,  0.6f, 0.6f, 0.6f,   0.2f, -0.2f,  0.2f,  0.6f, 0.6f, 0.6f,   0.2f,  0.2f,  0.2f,  0.6f, 0.6f, 0.6f,
-                // Unterseite
                 -0.2f, -0.2f, -0.2f,  0.2f, 0.2f, 0.2f,   0.2f, -0.2f, -0.2f,  0.2f, 0.2f, 0.2f,   0.2f, -0.2f,  0.2f,  0.2f, 0.2f, 0.2f,
                 0.2f, -0.2f,  0.2f,  0.2f, 0.2f, 0.2f,  -0.2f, -0.2f,  0.2f,  0.2f, 0.2f, 0.2f,  -0.2f, -0.2f, -0.2f,  0.2f, 0.2f, 0.2f,
-                // Oberseite
                 -0.2f,  0.2f, -0.2f,  0.7f, 0.7f, 0.7f,   0.2f,  0.2f, -0.2f,  0.7f, 0.7f, 0.7f,   0.2f,  0.2f,  0.2f,  0.7f, 0.7f, 0.7f,
                 0.2f,  0.2f,  0.2f,  0.7f, 0.7f, 0.7f,  -0.2f,  0.2f,  0.2f,  0.7f, 0.7f, 0.7f,  -0.2f,  0.2f, -0.2f,  0.7f, 0.7f, 0.7f
         };
