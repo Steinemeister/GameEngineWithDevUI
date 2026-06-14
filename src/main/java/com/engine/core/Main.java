@@ -134,6 +134,40 @@ public class Main extends Application {
         this.launcher.scanForProjects();
     }
 
+    public void runGameRuntime() {
+        if (currentProjectPath == null || activeScene == null) return;
+
+        String scenePath = currentProjectPath + "/" + activeProjectConfig.lastOpenedScene;
+        try (java.io.FileWriter writer = new java.io.FileWriter(scenePath)) {
+            gson.toJson(activeScene, writer);
+            System.out.println("Szene vor Spielstart zwischengespeichert.");
+        } catch (java.io.IOException e) {
+            System.err.println("Fehler beim Sichern vor Spielstart: " + e.getMessage());
+            return;
+        }
+
+        try {
+            String javaHome = System.getProperty("java.home");
+            String javaBin = javaHome + java.io.File.separator + "bin" + java.io.File.separator + "java";
+
+            String classpath = System.getProperty("java.class.path");
+
+            ProcessBuilder builder = new ProcessBuilder(
+                    javaBin,
+                    "-cp", classpath,
+                    "com.engine.core.GamePlayer",
+                    currentProjectPath
+            );
+
+            builder.inheritIO();
+            builder.start();
+            System.out.println("Spiele-Runtime erfolgreich im Hintergrund abgefeuert!");
+
+        } catch (java.io.IOException e) {
+            System.err.println("Fehler beim Starten der Spiele-Runtime: " + e.getMessage());
+        }
+    }
+
     public void compileShader(String code) { gameWindow.compileShader(code); }
     public int getTextureId() { return gameWindow.getTextureId(); }
     public int getViewportWidth() { return gameWindow.getWidth(); }

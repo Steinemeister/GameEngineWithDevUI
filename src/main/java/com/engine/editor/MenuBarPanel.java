@@ -12,28 +12,29 @@ public class MenuBarPanel implements EditorPanel {
 
     @Override
     public void updateAndRender() {
-        // Öffnet die globale Menüleiste ganz oben am Bildschirmrand
         if (ImGui.beginMainMenuBar()) {
 
             if (ImGui.beginMenu("Datei")) {
-
-                // Button zum Zurückkehren in den Projekt-Manager
                 if (ImGui.menuItem("Projekt schliessen")) {
                     engine.closeCurrentProject();
                 }
-
                 ImGui.separator();
-
-                // Button zum kompletten Beenden der Engine-Software
                 if (ImGui.menuItem("Beenden")) {
                     System.exit(0);
                 }
+                ImGui.endMenu();
+            }
 
+            // --- DER NEUE RUN-TIME / PLAY BEREICH ---
+            if (ImGui.beginMenu("Spiel")) {
+                if (ImGui.menuItem("[ > ] Spiel starten (Play)")) {
+                    engine.runGameRuntime();
+                }
                 ImGui.endMenu();
             }
 
             if (ImGui.beginMenu("Fenster")) {
-                ImGui.textDisabled("Hier koennen spaeter Fenster ein-/ausgeblendet werden.");
+                ImGui.textDisabled("Fenster-Optionen");
                 ImGui.endMenu();
             }
 
